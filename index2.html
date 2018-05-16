@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Location Finder</title>
+    <style>
+      .icon-remove,.icon-check{
+        display:none;
+      }    
+    </style>
+    <!-- external css-->
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.css" />
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" 
+    rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+    <!-- internal css -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="css/fontawesome/css.css">
+
+    <!-- <link rel="stylesheet" href="css/fontawesome/css">  -->
+    <!-- <link rel="stylesheet" href="css/bulma.map.css"> -->
+    <!-- <link rel="stylesheet" href="css/bulma.css"> -->
+
+ 
+</head>
+<body>
+ 
+ <nav class="navbar navbar-inverse fixed-top">
+    <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <!-- <a class="navbar-brand" href="#">Incidence Mapping</a> -->
+        </div>
+    
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav">
+            <!-- <li><a href="event.html">Add Event</a></li> -->
+            <li><a href="modal" data-toggle="modal" data-target="#eventModal"><i class="fa fa-pencil"></i> &nbsp; Reporter </a></li>
+            <li><a href="#" data-target="#myModal" data-toggle="modal"><i class="fa fa-bell-o"></i> &nbsp; Create Report </a></li>
+        </ul>
+        
+
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+                <form class="navbar-form"> <!-- search nav-bar -->
+                    <div class="input-group add-on">
+                        <input class="form-control" placeholder="Search Location" name="srch-term" id="srch-term" type="text">
+                         <div class="input-group-btn">
+                            <button class="btn btn-unique" type="submit">
+                                <i class="fa fa-paper-plane fa-fw" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div> 
+                   
+                </form>
+            </li>
+            <li ><a href="../admin/index.html"><i class="fa fa-power-off fa-fw" aria-hidden="true" style="padding-top: 0px;"></i> &nbsp; Login </a></li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</nav>
+  <br>
+    <section class="hero hero-body is-dark container">
+        <h1 class="title">Nigeria Location Info.</h1>
+        <h2 class="subtitle">Enter A Zipcode to get the location info:</h2>
+        <form action="http://teamsafe.herokuapp.com/api/reporter" method="POST" id="zipForm">
+                <div class="field">
+                      <div class="control has-icons-left has-icons-right">
+
+                          <input class="input zip is-large" type="text" placeholder="Enter Zipcode">
+
+                          <span class="icon is-small is-left">
+                            <i class="fa fa-map-pin"></i>
+                          </span>
+
+                          <span class="icon is-small is-right icon-check">
+                            <i class="fa fa-check"></i>
+                          </span>
+
+                          <span class="icon is-small is-right icon-remove">
+                                <i class="fa fa-remove"></i>
+                          </span>
+                      </div>    
+                </div>
+        </form>
+    </section>
+        <br>
+    <div class="container">
+      <div id="output"></div>
+    </div> 
+
+    <script>
+        // listen for submit
+        document.querySelector('#zipForm').addEventListener('submit', getLocationInfo);
+       
+        // listen for delete
+        document.querySelector('body').addEventListener ('click', deleteLocation);
+        
+        function getLocationInfo(e){ 
+          
+        //  get zip value from input
+        const zip = document.querySelector('.zip').value
+
+        // Make Request  
+        fetch(`http://api.zippopotam.us/us/${zip}`)
+        // fetch(`http://teamsafe.herokuapp.com/api/reporter/${zip}`)
+        .then(response =>  {
+          if(response.status != 200){
+            showIcon('remove');
+            document.querySelector('#output'). innerHTML =
+            `
+            <article class="message is-danger">
+              <div class="message-body"> Invalid Zipcode, Please try again!</div>
+            </article>
+            `;
+            throw Error(response.statusText);
+          } else{
+            showIcon('check');
+            return response.json();
+          }
+        })
+        .then(data => {
+          // show location info
+          let output = '';
+          data.places.forEach(place => {
+            output += `
+             <article ="message is-success">
+              <div class="message-header">
+                <p>Location Info</p>
+                <button class="delete"></button>
+              </div>
+              <div class="message-body">
+                <ul>
+                  <li><strong>City: </strong>${place['place name']}</li>
+                  <li><strong>State: </strong>${place['state']}</li>
+                  <li><strong>Longitude: </strong>${place['longitude']}</li>
+                  <li><strong>Latitude: </strong>${place['latitude']}</li>
+                </ul>
+              </div>
+             </article>
+            `;           
+          });
+
+          // insert into output div
+          document.querySelector('#output').innerHTML = output;
+        })
+        .catch(err => console.log(err));
+
+          e.preventDefault();
+        }
+
+        // show check or remove icon
+        function showIcon(icon){
+          // clear icons
+          document.querySelector('.icon-remove').style.display = 'none';
+          document.querySelector('.icon-check').style.display = 'none';
+          // show the correct icon
+          document.querySelector(`.icon-${icon}`).style.display = 'inline-flex';
+        }
+
+        // delete location box
+        function deleteLocation(e){
+          if(e.target.className == 'delete'){
+            document.querySelector('.message').remove();
+            document.querySelector('.zip').value = '';
+            document.querySelector('.icon-check').remove();
+          }
+        }
+    </script>
+
+   
+<!--Create Report Modal -->
+<form action="http://teamsafe.herokuapp.com/api/reporter/create" method="post">
+<div id="myModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content"><!-- Modal content-->
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Create Report</h4>
+      </div>
+      <div class="modal-body"><!-- modal-body -->
+          <div class="form-group">
+            <label for="text">Name:</label>
+            <input type="text" class="form-control" id="pwd">
+          </div>
+          <div class="form-group">
+            <label for="text">Location:</label>
+            <input type="text" class="form-control" id="pwd">
+          </div>
+          <div class="form-group">
+            <label for="text">Description:</label>
+            <textarea type="text" class="form-control" rows="5"></textarea>
+          </div>
+          <div class="form-group">
+            <button class="btn btn-unique" type="submit">
+                <i class="fa fa-paper-plane fa-fw" aria-hidden="true"></i>
+            </button>
+         </div>
+      </div><!-- endmodal-body -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+</form>
+
+ <!-- Reporter Modal -->
+ <form action="http://teamsafe.herokuapp.com/api/reporter" method="post">
+ <div class="modal fade" id="eventModal" tabindex="-1" role="dialog" aria-labelledby="eventModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Reporter</h4>
+        </div>
+        <div class="modal-body">
+            <h2 align="center" style="background-color: #74985e; color: #fff;">Report infectious out brake:</h2>
+              <h4>State of event:</h4>
+            <select name="state">		  	       
+             <option selected="">Select State</option>
+             <option value="1">Abuja</option>
+             <option value="2">Abia</option>
+             <option value="3">Adamawa</option>
+             <option value="4">Akwa ibom</option>
+             <option value="5">Anambra</option>
+             <option value="6">Bauchi</option>
+             <option value="7">Bayelsa</option>
+             <option value="8">Benue</option>
+             <option value="9">Borno</option>
+             <option value="10">Cross river</option>
+             <option value="11">Delta</option>
+             <option value="12">Ebonyi</option>
+             <option value="13">Edo</option>
+             <option value="14">Ekiti</option>
+             <option value="15">Enugu</option>
+             <option value="16">Gombe</option>
+             <option value="17">Imo</option>
+             <option value="18">Jigawa</option>
+             <option value="19">Kaduna</option>
+             <option value="20">Kano</option>
+             <option value="21">Katsina</option>
+             <option value="22">Kebbi</option>
+             <option value="23">Kogi</option>
+             <option value="24">Kwara</option>
+             <option value="25">Nassarawa</option>
+             <option value="26">Niger</option>
+             <option value="27">Ogun</option>
+             <option value="28">Ondo</option>
+             <option value="29">Osun</option>
+             <option value="30">Oyo</option>
+             <option value="31">Plateau</option>
+             <option value="32">Rivers</option>
+             <option value="33">Sokoto</option>
+             <option value="34">Taraba</option>
+             <option value="35">Yobe</option>
+             <option value="36">Zamfara</option>
+         </select>&nbsp;
+         <div class="form-group">
+           <label for="pwd">LGA:</label>
+           <input type="text" class="form-control" name="lga">
+         </div>
+         <div class="form-group">
+           <label for="text">Infected people:</label>
+           <input type="number" class="form-control" name="number">
+         </div>
+         <div class="form-group">
+          <label for="text">Name:</label>
+          <input type="text" class="form-control" name="name">
+        </div>
+         <div class="form-group">
+           <label for="text">Description:</label>
+           <textarea type="text" class="form-control" rows="5" name="description"></textarea> 
+         </div>
+          <div class="form-group">
+             <button class="btn btn-unique" type="submit">
+                 <i class="fa fa-paper-plane fa-fw" aria-hidden="true"></i>
+             </button>
+          </div>
+        </div><!-- End modal-body   -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form><!-- end Reporter Modal -->
+
+  <!-- <script> -->
+  <script src="js/jquery.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+
+   <!--footer  -->
+  <footer class="container-fluid text-center">
+    <div class="card text-white bg-dark">
+  </div>
+    <p>Copyright &copy;2018 Power By Team-Safe.</p>  
+  </footer>
+  <!-- end footer -->
+</body>
+</html>
